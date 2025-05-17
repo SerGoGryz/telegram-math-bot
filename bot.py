@@ -134,19 +134,15 @@ if __name__ == "__main__":
         app.add_handler(conv_handler)
         app.add_handler(CommandHandler("model", model_command))
 
-        # Инициализация и установка вебхука
-        await app.initialize()
+        # Установка вебхука
         await app.bot.set_webhook(WEBHOOK_URL)
 
-        # Запуск вебхука
-        await app.start()
+        # Просто запускаем вебхук (внутри вызывается и initialize, и start, и stop)
         await app.run_webhook(
             listen="0.0.0.0",
             port=int(os.getenv("PORT", 10000)),
             url_path=WEBHOOK_PATH,
             webhook_url=WEBHOOK_URL,
         )
-        await app.stop()
 
     asyncio.run(main())
-
