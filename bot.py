@@ -74,6 +74,10 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_operation.pop(update.effective_user.id, None)
         await update.message.reply_text("Операция сброшена. Выберите новое действие:", reply_markup=get_main_keyboard())
         return OPERATION_CHOICE
+    elif text in ["/start","start"]:
+        user_operation.pop(update.effective_user.id, None)
+        await update.message.reply_text("Добро пожаловать! Выбери действие или нажми 'Ручной ввод':", reply_markup=get_main_keyboard())
+        return OPERATION_CHOICE
     else:
         await update.message.reply_text("Пожалуйста, выберите действие с клавиатуры.")
         return OPERATION_CHOICE
@@ -84,7 +88,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_user.full_name
     result = ""
 
-    if text in ["Назад", "Очистить","start"]:
+    if text in ["Назад", "Очистить", "start", "/start"]:
         return await choose_operation(update, context)
 
     if uid in user_operation:
