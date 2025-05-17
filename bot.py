@@ -37,7 +37,8 @@ def get_main_keyboard():
     ], resize_keyboard=True)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Выбери действие или нажми 'Ручной ввод':", reply_markup=get_main_keyboard())
+    user_operation.pop(update.effective_user.id, None)
+    await update.message.reply_text("Добро пожаловать! Выбери действие или нажми 'Ручной ввод':", reply_markup=get_main_keyboard())
     return OPERATION_CHOICE
 async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Выбери действие или нажми 'Ручной ввод':", reply_markup=get_main_keyboard())
