@@ -131,5 +131,16 @@ app.add_handler(CommandHandler("model", model_command))
 # === ЗАПУСК ===
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(app.bot.set_webhook(WEBHOOK_URL))
-    app.run_webhook(listen="0.0.0.0", port=int(os.getenv("PORT", 10000)))
+
+    async def main():
+        await app.bot.set_webhook(WEBHOOK_URL)
+        await app.initialize()
+        await app.start()
+        await app.updater.start_webhook(
+            listen="0.0.0.0",
+            port=int(os.getenv("PORT", 10000)),
+            webhook_url=WEBHOOK_URL,
+        )
+        await app.updater.idle()
+
+    asyncio.run(main())
