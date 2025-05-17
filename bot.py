@@ -109,9 +109,9 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             log_task(username, text, "SymPy (авто)", result)
 
-    await update.message.reply_text(result)
-    await update.message.reply_text("Можешь выбрать новое действие:", reply_markup=get_main_keyboard())
+    await update.message.reply_text(result, reply_markup=get_main_keyboard())
     return OPERATION_CHOICE
+
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Диалог завершён.")
