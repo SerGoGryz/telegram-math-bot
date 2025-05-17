@@ -7,10 +7,11 @@ import os
 from dotenv import load_dotenv
 from math_solver import solve_equation, compute_operation
 from gpt_solver import ask_gpt
-from neural_solver import ask_model
 from datetime import datetime
 load_dotenv()
 import re
+def ask_model(prompt: str) -> str:
+    return "Локальная модель отключена на хостинге."
 OPERATION_CHOICE, WAIT_FOR_INPUT = range(2)
 user_operation = {}
 USE_GPT = os.getenv("OPENAI_API_KEY") is not None
