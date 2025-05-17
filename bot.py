@@ -35,6 +35,9 @@ def get_main_keyboard():
         [KeyboardButton("Логарифм"), KeyboardButton("Упростить"), KeyboardButton("Раскрыть скобки")],
         [KeyboardButton("Ручной ввод"), KeyboardButton("Очистить"), KeyboardButton("Назад")]
     ], resize_keyboard=True)
+async def handle_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Я вас не понял. Пожалуйста, выберите действие из меню:", reply_markup=get_main_keyboard())
+    return OPERATION_CHOICE
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_operation.pop(update.effective_user.id, None)
@@ -130,7 +133,7 @@ if __name__ == "__main__":
             OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
             WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[CommandHandler("cancel", cancel), MessageHandler(filters.TEXT & ~filters.COMMAND, handle_unknown)],
     )
 
     app.add_handler(conv_handler)
