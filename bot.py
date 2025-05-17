@@ -117,25 +117,36 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Запуск ===
 if __name__ == "__main__":
-    from telegram.ext import ApplicationBuilder
-    import os
+    import asyncio
 
-    app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
+    async def main():
+        app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
-            WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
+        conv_handler = ConversationHandler(
+            entry_points=[CommandHandler("start", start)],
+            states={
+                OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
+                WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
+            },
+            fallbacks=[CommandHandler("cancel", cancel)],
+        )
 
-    app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("model", model_command))
+        app.add_handler(conv_handler)
+        app.add_handler(CommandHandler("model", model_command))
 
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),
-        webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/webhook",
-    )
+        # Инициализация и установка вебхука
+        await app.initialize()
+        await app.bot.set_webhook(WEBHOOK_URL)
+
+        # Запуск вебхука
+        await app.start()
+        await app.run_webhook(
+            listen="0.0.0.0",
+            port=int(os.getenv("PORT", 10000)),
+            url_path=WEBHOOK_PATH,
+            webhook_url=WEBHOOK_URL,
+        )
+        await app.stop()
+
+    asyncio.run(main())
+
