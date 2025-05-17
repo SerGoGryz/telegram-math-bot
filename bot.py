@@ -84,7 +84,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_user.full_name
     result = ""
 
-    if text in ["Назад", "Очистить"]:
+    if text in ["Назад", "Очистить","start"]:
         return await choose_operation(update, context)
 
     if uid in user_operation:
