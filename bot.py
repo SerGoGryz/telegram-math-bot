@@ -12,12 +12,12 @@ import re
 
 load_dotenv()
 
-# Для хостинга с вебхуками
+# Для вебхука
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"https://{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
-# Заглушка для отключённой локальной модели
+# Заглушка (если нейросеть отключена)
 def ask_model(prompt: str) -> str:
     return "Локальная модель отключена на хостинге."
 
@@ -116,23 +116,20 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Диалог завершён.")
     return ConversationHandler.END
 
-# === НАСТРОЙКА ПРИЛОЖЕНИЯ ===
-app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).webhook_path(WEBHOOK_PATH).build()
-
-conv_handler = ConversationHandler(
+# === СБОРКА ===
+app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
+app.add_handler(ConversationHandler(
     entry_points=[CommandHandler("start", start)],
     states={
         OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
         WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
     },
     fallbacks=[CommandHandler("cancel", cancel)],
-)
-
-app.add_handler(conv_handler)
+))
 app.add_handler(CommandHandler("model", model_command))
 
+# === ЗАПУСК ===
 if __name__ == "__main__":
-    # Устанавливаем webhook
     import asyncio
     asyncio.run(app.bot.set_webhook(WEBHOOK_URL))
     app.run_webhook(listen="0.0.0.0", port=int(os.getenv("PORT", 10000)))
