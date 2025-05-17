@@ -39,7 +39,9 @@ def get_main_keyboard():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Выбери действие или нажми 'Ручной ввод':", reply_markup=get_main_keyboard())
     return OPERATION_CHOICE
-
+async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Выбери действие или нажми 'Ручной ввод':", reply_markup=get_main_keyboard())
+    return OPERATION_CHOICE
 async def model_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if USE_GPT:
         from gpt_solver import PRIMARY, SECONDARY
@@ -122,7 +124,7 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CommandHandler("start", start),CommandHandler("menu", show_menu)],
         states={
             OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
             WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
