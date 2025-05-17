@@ -116,7 +116,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # === Запуск ===
-async def main():
+if __name__ == "__main__":
+    from telegram.ext import ApplicationBuilder
+    import os
+
     app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
 
     conv_handler = ConversationHandler(
@@ -131,22 +134,8 @@ async def main():
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("model", model_command))
 
-    await app.bot.set_webhook(WEBHOOK_URL)
-    await app.run_webhook(
+    app.run_webhook(
         listen="0.0.0.0",
         port=int(os.getenv("PORT", 10000)),
-        url_path=WEBHOOK_PATH,
-        webhook_url=WEBHOOK_URL
+        webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/webhook",
     )
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        loop = asyncio.get_event_loop()
-        loop.create_task(main())
-        loop.run_forever()
-    except RuntimeError:
-        asyncio.run(main())
-
