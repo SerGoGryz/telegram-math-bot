@@ -109,8 +109,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             log_task(username, text, "SymPy (авто)", result)
 
-    await update.message.reply_text(result)
-    await update.message.reply_text("Можешь выбрать новое действие:", reply_markup=get_main_keyboard())
+    await update.message.reply_text(result, reply_markup=get_main_keyboard())
     return OPERATION_CHOICE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -118,27 +117,37 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # === Запуск ===
+# === Запуск ===
 if __name__ == "__main__":
     from telegram.ext import ApplicationBuilder
+    from telegram import MenuButtonCommands
+    import asyncio
 
-    app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
+    async def main():
+        app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start),CommandHandler("menu", show_menu)],
-        states={
-            OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
-            WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
+        conv_handler = ConversationHandler(
+            entry_points=[CommandHandler("start", start), CommandHandler("menu", show_menu)],
+            states={
+                OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
+                WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
+            },
+            fallbacks=[CommandHandler("cancel", cancel)],
+        )
 
-    app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("model", model_command))
+        app.add_handler(conv_handler)
+        app.add_handler(CommandHandler("model", model_command))
 
-    # Запуск синхронно — сам делает initialize/start/idle/stop
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),
-        url_path=WEBHOOK_PATH,
-        webhook_url=WEBHOOK_URL,
-    )
+        # Устанавливаем кнопку меню Telegram
+        await app.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+
+        # Запуск вебхука
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=int(os.getenv("PORT", 10000)),
+            url_path=WEBHOOK_PATH,
+            webhook_url=WEBHOOK_URL,
+        )
+
+    asyncio.run(main())
+
