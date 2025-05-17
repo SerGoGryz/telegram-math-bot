@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Environments
+.env
+
+# Models
+models/
+
+# Logs
+*.log
+log.txt
+
+# VS Code settings
+.vscode/
