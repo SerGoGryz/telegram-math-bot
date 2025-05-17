@@ -1,6 +1,6 @@
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler,
+    Application, ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler,
     ContextTypes, filters
 )
 import os
@@ -12,19 +12,18 @@ import re
 
 load_dotenv()
 
-# Для вебхука
+# Настройки вебхука
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"https://{WEBHOOK_HOST}{WEBHOOK_PATH}"
-
-# Заглушка (если нейросеть отключена)
-def ask_model(prompt: str) -> str:
-    return "Локальная модель отключена на хостинге."
 
 OPERATION_CHOICE, WAIT_FOR_INPUT = range(2)
 user_operation = {}
 USE_GPT = os.getenv("OPENAI_API_KEY") is not None
 LOG_FILE = "log.txt"
+
+def ask_model(prompt: str) -> str:
+    return "Локальная модель отключена на хостинге."
 
 def log_task(user, query, source, result):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -58,7 +57,7 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_operation[update.effective_user.id] = operations[text]
         hint = ""
         if text == "Логарифм":
-            hint = "\nПример ввода:\n- 2 8 — логарифм 8 по основанию 2 (log(8, 2))\n- 10 — натуральный логарифм log(10)"
+            hint = "\nПример ввода:\n- 2 8 — логарифм 8 по основанию 2\n- 10 — натуральный логарифм"
         await update.message.reply_text(f"Введите выражение (например: x^2):{hint}")
         return WAIT_FOR_INPUT
     elif text == "Ручной ввод":
@@ -116,31 +115,29 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Диалог завершён.")
     return ConversationHandler.END
 
-# === СБОРКА ===
-app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
-app.add_handler(ConversationHandler(
-    entry_points=[CommandHandler("start", start)],
-    states={
-        OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
-        WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
-    },
-    fallbacks=[CommandHandler("cancel", cancel)],
-))
-app.add_handler(CommandHandler("model", model_command))
+# === Запуск ===
+async def main():
+    app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
 
-# === ЗАПУСК ===
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
+            WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+
+    app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("model", model_command))
+
+    await app.bot.set_webhook(WEBHOOK_URL)
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.getenv("PORT", 10000)),
+        webhook_path=WEBHOOK_PATH,
+    )
+
 if __name__ == "__main__":
     import asyncio
-
-    async def main():
-        await app.bot.set_webhook(WEBHOOK_URL)
-        await app.initialize()
-        await app.start()
-        await app.updater.start_webhook(
-            listen="0.0.0.0",
-            port=int(os.getenv("PORT", 10000)),
-            webhook_url=WEBHOOK_URL,
-        )
-        await app.updater.idle()
-
     asyncio.run(main())
