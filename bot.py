@@ -31,9 +31,9 @@ def log_task(user, query, source, result):
 
 def get_main_keyboard():
     return ReplyKeyboardMarkup([
-        [KeyboardButton("Производная"), KeyboardButton("Интеграл")],
-        [KeyboardButton("Логарифм"), KeyboardButton("Упростить"), KeyboardButton("Раскрыть скобки")],
-        [KeyboardButton("Ручной ввод"), KeyboardButton("Очистить"), KeyboardButton("Назад")]
+        [KeyboardButton("Старт"), KeyboardButton("Производная")],
+        [KeyboardButton("Интеграл"), KeyboardButton("Логарифм"), KeyboardButton("Упростить")],
+        [KeyboardButton("Раскрыть скобки"),KeyboardButton("Ручной ввод"), KeyboardButton("Очистить")]
     ], resize_keyboard=True)
 async def handle_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Я вас не понял. Пожалуйста, выберите действие из меню:", reply_markup=get_main_keyboard())
@@ -74,7 +74,7 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_operation.pop(update.effective_user.id, None)
         await update.message.reply_text("Операция сброшена. Выберите новое действие:", reply_markup=get_main_keyboard())
         return OPERATION_CHOICE
-    elif text in ["/start","start"]:
+    elif text in ["/start","start","Старт"]:
         user_operation.pop(update.effective_user.id, None)
         await update.message.reply_text("Добро пожаловать! Выбери действие или нажми 'Ручной ввод':", reply_markup=get_main_keyboard())
         return OPERATION_CHOICE
