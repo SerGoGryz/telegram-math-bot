@@ -3,7 +3,7 @@ from sympy.parsing.sympy_parser import parse_expr
 import re
 import matplotlib.pyplot as plt
 from io import BytesIO
-
+from sympy import pretty
 def insert_multiplication_signs(expr: str) -> str:
     expr = re.sub(r'(\d)([a-zA-Z\(])', r'\1*\2', expr)
     expr = re.sub(r'(\))(\d)', r'\1*\2', expr)
@@ -16,7 +16,7 @@ def format_solution(solutions):
     formatted = []
     for i, sol in enumerate(solutions, start=1):
         simplified = simplify(sol)
-        formatted.append(f"x{i} = {simplified}")
+        formatted.append(f"x{i} = {pretty(simplified, use_unicode=True)}")
     
     if any(I in sol.free_symbols for sol in solutions):
         return "Комплексные корни:\n" + "\n".join(formatted)
@@ -38,8 +38,12 @@ def get_latex_solution(expr: str) -> str:
         else:
             return None
         solutions = solve(equation, x)
-        latex_parts = [f"x_{{{i+1}}} = {latex(sol)}" for i, sol in enumerate(solutions)]
-        return "\\\\ ".join(latex_parts)
+        latex_parts = []
+        for i, sol in enumerate(solutions):
+            simplified = simplify(sol)
+            latex_expr = latex(simplified).replace("i", r"\mathrm{i}")
+            latex_parts.append(f"x_{{{i+1}}} = {latex_expr}")
+        return r"\\ ".join(latex_parts)
     except:
         return None
 
