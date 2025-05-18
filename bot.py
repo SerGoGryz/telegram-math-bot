@@ -66,7 +66,7 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if text == "Логарифм":
             hint = "\nПример ввода:\n- 2 8 — логарифм 8 по основанию 2\n- 10 — натуральный логарифм"
         if text == "Решить уравнение":
-            hint = "\Пример ввода:\n- x^2 + 2*x = 8\n- x^2 -5x + 6"
+            hint = "\Пример ввода:\nx^2 + 2*x = 8 = 0\nx^2 -5x + 6 = 0"
         await update.message.reply_text(f"Введите выражение или уравнение:{hint}")
         return WAIT_FOR_INPUT
     elif text == "Ручной ввод":
