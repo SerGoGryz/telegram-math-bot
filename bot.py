@@ -13,15 +13,12 @@ from math_solver import solve_equation, compute_operation, get_latex_solution
 from latex_renderer import render_latex_image
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from telegram import CallbackQuery
-from telegram.ext import CallbackQueryHandler
 load_dotenv()
 
 # Настройки вебхука
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"https://{WEBHOOK_HOST}{WEBHOOK_PATH}"
-AWAIT_LATEX_CONFIRM = 3
 OPERATION_CHOICE, WAIT_FOR_INPUT = range(2)
 user_operation = {}
 USE_GPT = os.getenv("OPENAI_API_KEY") is not None
@@ -30,11 +27,6 @@ LOG_FILE = "log.txt"
 def ask_model(prompt: str) -> str:
     return "Локальная модель отключена на хостинге."
 
-def get_yes_no_keyboard():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("Да", callback_data="yes"),
-         InlineKeyboardButton("Нет", callback_data="no")]
-    ])
 
 def log_task(user, query, source, result):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -100,7 +92,6 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     uid = update.effective_user.id
     username = update.effective_user.full_name
-    result = ""
 
     if text in ["Назад", "Очистить", "start", "/start"]:
         return await choose_operation(update, context)
@@ -113,7 +104,6 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
         return OPERATION_CHOICE
 
-    # Решение уравнения
     result = solve_equation(text)
     result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
 
@@ -127,32 +117,25 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     log_task(username, text, "SymPy (авто)", result)
     await update.message.reply_text(result)
-    await update.message.reply_text("Показать решение в LaTeX?", reply_markup=get_yes_no_keyboard())
 
-    context.user_data["latex_expr"] = text
-    return AWAIT_LATEX_CONFIRM
+    # Вывод LaTeX как форматированный текст (Markdown)
+    latex_code = get_latex_solution(text)
+    if latex_code:
+        await update.message.reply_text(
+            f"*LaTeX-решение:*\n`{latex_code}`",
+            parse_mode="Markdown",
+            reply_markup=get_main_keyboard()
+        )
+    else:
+        await update.message.reply_text("Выберите следующее действие:", reply_markup=get_main_keyboard())
+
+    return OPERATION_CHOICE
+
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Диалог завершён.")
     return ConversationHandler.END
-async def handle_latex_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    user_choice = query.data
-    expr = context.user_data.get("latex_expr")
 
-    if user_choice == "yes" and expr:
-        latex_code = get_latex_solution(expr)
-        if latex_code:
-            img = render_latex_image(latex_code)
-            try:
-                await query.message.reply_photo(photo=img, caption="LaTeX-решение:")
-            except Exception as e:
-                await query.message.reply_text(f"Ошибка при отправке изображения: {e}")
-    else:
-        await query.message.reply_text("Хорошо, продолжаем без LaTeX.")
-
-    return OPERATION_CHOICE
 # === Запуск ===
 if __name__ == "__main__":
     from telegram.ext import ApplicationBuilder
@@ -164,7 +147,6 @@ if __name__ == "__main__":
         states={
             OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
             WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
-            AWAIT_LATEX_CONFIRM: [CallbackQueryHandler(handle_latex_confirm)],
         },
         fallbacks=[CommandHandler("cancel", cancel), MessageHandler(filters.TEXT & ~filters.COMMAND, handle_unknown)],
     )

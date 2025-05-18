@@ -47,9 +47,10 @@ def get_latex_solution(expr: str) -> str:
             simplified = simplify(sol)
             latex_expr = latex(simplified).replace("i", r"\mathrm{i}")
             latex_parts.append(f"x_{{{i+1}}} = {latex_expr}")
-        return r"\\ ".join(latex_parts)
+        return ";\n".join(latex_parts)
     except:
         return None
+
 
 
 def solve_equation(expr: str):
