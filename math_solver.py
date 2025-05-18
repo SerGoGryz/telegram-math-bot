@@ -16,7 +16,8 @@ def format_solution(solutions):
     formatted = []
     for i, sol in enumerate(solutions, start=1):
         simplified = simplify(sol)
-        formatted.append(f"x{i} = {pretty(simplified, use_unicode=True)}")
+        formatted.append(f"x{i} = {str(simplified)}")
+
     
     if any(I in sol.free_symbols for sol in solutions):
         return "Комплексные корни:\n" + "\n".join(formatted)

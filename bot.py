@@ -128,7 +128,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         latex_code = get_latex_solution(text)
         if latex_code:
             img = render_latex_image(latex_code)
-            await update.message.reply_photo(photo=img, caption="Решение в виде формулы:")
+            await update.message.reply_photo(photo=img)
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
 
     return OPERATION_CHOICE
