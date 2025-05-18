@@ -60,13 +60,19 @@ def compute_operation(operation: str, expression: str):
             if len(parts) == 2:
                 try:
                     base, arg = map(parse_expr, parts)
-                    return f"Логарифм по основанию {base}: {str(log(arg, base)).replace('**', '^')}"
+                    # Символьная форма
+                    symbolic = f"log({arg})/log({base})"
+                    # Числовое значение
+                    numeric = log(float(arg), float(base))
+                    return f"Логарифм по основанию {base}: {symbolic}\nОтвет: {numeric:.5f}"
                 except Exception:
                     return "Ошибка: для логарифма укажите два числа или выражения через пробел, например: 2 8"
             elif len(parts) == 1:
                 try:
                     arg = parse_expr(parts[0])
-                    return f"Натуральный логарифм: {str(log(arg)).replace('**', '^')}"
+                    symbolic = f"log({arg})"
+                    numeric = log(float(arg))
+                    return f"Натуральный логарифм: {symbolic}\nОтвет: {numeric:.5f}"
                 except Exception:
                     return "Ошибка: для натурального логарифма просто введите число, например: 10"
             else:
@@ -87,4 +93,5 @@ def compute_operation(operation: str, expression: str):
             return "Неизвестная операция."
     except Exception as e:
         return f"Ошибка при вычислении: {e}"
+
 
