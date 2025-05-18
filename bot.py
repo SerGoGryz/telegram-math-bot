@@ -33,7 +33,8 @@ def get_main_keyboard():
     return ReplyKeyboardMarkup([
         [KeyboardButton("Старт"), KeyboardButton("Производная")],
         [KeyboardButton("Интеграл"), KeyboardButton("Логарифм"), KeyboardButton("Упростить")],
-        [KeyboardButton("Раскрыть скобки"),KeyboardButton("Ручной ввод"), KeyboardButton("Очистить")]
+        [KeyboardButton("Раскрыть скобки"), KeyboardButton("Решить уравнение")],
+        [KeyboardButton("Ручной ввод"), KeyboardButton("Очистить")]
     ], resize_keyboard=True)
 async def handle_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Я вас не понял. Пожалуйста, выберите действие из меню:", reply_markup=get_main_keyboard())
@@ -57,14 +58,16 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     operations = {
         "Производная": "diff", "Интеграл": "integrate", "Логарифм": "log",
-        "Упростить": "simplify", "Раскрыть скобки": "expand"
+        "Упростить": "simplify", "Раскрыть скобки": "expand", "Решить уравнение": "solve"
     }
     if text in operations:
         user_operation[update.effective_user.id] = operations[text]
         hint = ""
         if text == "Логарифм":
             hint = "\nПример ввода:\n- 2 8 — логарифм 8 по основанию 2\n- 10 — натуральный логарифм"
-        await update.message.reply_text(f"Введите выражение (например: x^2):{hint}")
+        if text == "Решить уравнение":
+            hint = "\Пример ввода:\n- x^2 + 2*x = 8\n- x^2 -5x + 6"
+        await update.message.reply_text(f"Введите выражение или уравнение:{hint}")
         return WAIT_FOR_INPUT
     elif text == "Ручной ввод":
         user_operation.pop(update.effective_user.id, None)

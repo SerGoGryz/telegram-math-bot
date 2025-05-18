@@ -64,6 +64,8 @@ def compute_operation(operation: str, expression: str):
             return f"Раскрыто: {str(expand(parsed)).replace('**', '^')}"
         elif operation == "simplify":
             return f"Упрощено: {str(simplify(parsed)).replace('**', '^')}"
+        elif operation == "solve":
+            return solve_equation(expression)
         else:
             return "Неизвестная операция."
     except Exception as e:
