@@ -16,12 +16,15 @@ def format_solution(solutions):
     formatted = []
     for i, sol in enumerate(solutions, start=1):
         simplified = simplify(sol)
-        formatted.append(f"x{i} = {str(simplified)}")
+        s = str(simplified)
+        s = s.replace("I", "i").replace("*", "")  # без умножения и латинская i
+        s = s.replace("sqrt", "√")
+        formatted.append(f"x{i} = {s}")
 
-    
     if any(I in sol.free_symbols for sol in solutions):
         return "Комплексные корни:\n" + "\n".join(formatted)
     return "Решение:\n" + "\n".join(formatted)
+
 
 def get_latex_solution(expr: str) -> str:
     x = symbols('x')

@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 from io import BytesIO
+import matplotlib
+matplotlib.use("Agg")
 
 def render_latex_image(latex_expr: str) -> BytesIO:
     fig, ax = plt.subplots(figsize=(6, 1.5))  # увеличенный размер

@@ -11,6 +11,9 @@ from datetime import datetime
 import re
 from math_solver import solve_equation, compute_operation, get_latex_solution
 from latex_renderer import render_latex_image
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+
 load_dotenv()
 
 # Настройки вебхука
@@ -25,6 +28,11 @@ LOG_FILE = "log.txt"
 
 def ask_model(prompt: str) -> str:
     return "Локальная модель отключена на хостинге."
+
+def get_yes_no_keyboard():
+    return ReplyKeyboardMarkup([
+        [KeyboardButton("Да"), KeyboardButton("Нет")]
+    ], resize_keyboard=True, one_time_keyboard=True)
 
 def log_task(user, query, source, result):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -98,40 +106,42 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if uid in user_operation:
         op = user_operation.pop(uid)
         result = compute_operation(op, text)
+        result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
         log_task(username, f"Операция {op} с {text}", "SymPy (ручная)", result)
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
         return OPERATION_CHOICE
 
-    # Попытка решения уравнения
     result = solve_equation(text)
+    result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
 
     if "Ошибка:" in result or result == "Решений нет.":
         model_used = "GPT"
         model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
-        if model_reply.strip() == "[GPT: превышен лимит]" or model_used == "None":
-            model_reply = ask_model(text)
-            model_used = "Mistral (fallback)"
-        steps = []
-        for line in model_reply.splitlines():
-            if ":" in line:
-                label, expr = line.split(":", 1)
-                expr = expr.strip()
-                if not re.match(r"^[\d\s\+\-\*/\.\(\)x^]+$", expr):
-                    continue
-                calc = solve_equation(expr)
-                steps.append(f"{label.strip()}: {expr} = {calc.replace('Ответ: ', '')}")
-        result = "\n".join(steps) if steps else f"Ответ от модели:\n{model_reply}"
+        result = f"Ответ от модели:\n{model_reply}"
         log_task(username, text, model_used, result)
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
     else:
         log_task(username, text, "SymPy (авто)", result)
+
         latex_code = get_latex_solution(text)
         if latex_code:
             img = render_latex_image(latex_code)
-            await update.message.reply_photo(photo=img)
+            try:
+                await update.message.reply_photo(photo=img, caption="Решение в LaTeX-формате:")
+            except Exception as e:
+                await update.message.reply_text(f"[Ошибка при отправке изображения]: {e}")
+
+            # Кнопки Да / Нет
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("Да", callback_data="yes"),
+                 InlineKeyboardButton("Нет", callback_data="no")]
+            ])
+            await update.message.reply_text("Понравилось оформление LaTeX?", reply_markup=keyboard)
+
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
 
     return OPERATION_CHOICE
+
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
