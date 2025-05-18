@@ -91,6 +91,7 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
+    text = re.sub(r'e\^([a-zA-Z0-9_()]+)', r'exp(\1)', text)
     uid = update.effective_user.id
     username = update.effective_user.full_name
 
