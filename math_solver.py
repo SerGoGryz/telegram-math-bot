@@ -1,6 +1,8 @@
-from sympy import symbols, Eq, solve, I, simplify, expand, diff, integrate, log, sin, cos, sqrt, pi, E
+from sympy import symbols, Eq, solve, I, simplify, expand, diff, integrate, log, sin, cos, sqrt, pi, E, latex
 from sympy.parsing.sympy_parser import parse_expr
 import re
+import matplotlib.pyplot as plt
+from io import BytesIO
 
 def insert_multiplication_signs(expr: str) -> str:
     expr = re.sub(r'(\d)([a-zA-Z\(])', r'\1*\2', expr)
@@ -10,9 +12,37 @@ def insert_multiplication_signs(expr: str) -> str:
 def format_solution(solutions):
     if not solutions:
         return "Решений нет."
+    
+    formatted = []
+    for i, sol in enumerate(solutions, start=1):
+        simplified = simplify(sol)
+        formatted.append(f"x{i} = {simplified}")
+    
     if any(I in sol.free_symbols for sol in solutions):
-        return "Комплексные корни:\n" + "\n".join([f"x = {sol}" for sol in solutions])
-    return "Решение:\n" + "\n".join([f"x = {sol}" for sol in solutions])
+        return "Комплексные корни:\n" + "\n".join(formatted)
+    return "Решение:\n" + "\n".join(formatted)
+
+def get_latex_solution(expr: str) -> str:
+    x = symbols('x')
+    expr = expr.replace("^", "**")
+    expr = insert_multiplication_signs(expr)
+    try:
+        if "=" in expr:
+            left, right = expr.split("=")
+            left_expr = parse_expr(left.strip())
+            right_expr = parse_expr(right.strip())
+            equation = Eq(left_expr, right_expr)
+        elif "x" in expr:
+            parsed = parse_expr(expr)
+            equation = Eq(parsed, 0)
+        else:
+            return None
+        solutions = solve(equation, x)
+        latex_parts = [f"x_{{{i+1}}} = {latex(sol)}" for i, sol in enumerate(solutions)]
+        return "\\\\ ".join(latex_parts)
+    except:
+        return None
+
 
 def solve_equation(expr: str):
     x = symbols('x')

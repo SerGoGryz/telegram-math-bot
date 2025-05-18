@@ -9,7 +9,8 @@ from math_solver import solve_equation, compute_operation
 from gpt_solver import ask_gpt
 from datetime import datetime
 import re
-
+from math_solver import solve_equation, compute_operation, get_latex_solution
+from latex_renderer import render_latex_image
 load_dotenv()
 
 # Настройки вебхука
@@ -98,29 +99,38 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         op = user_operation.pop(uid)
         result = compute_operation(op, text)
         log_task(username, f"Операция {op} с {text}", "SymPy (ручная)", result)
-    else:
-        result = solve_equation(text)
-        if "Ошибка:" in result or result == "Решений нет.":
-            model_used = "GPT"
-            model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
-            if model_reply.strip() == "[GPT: превышен лимит]" or model_used == "None":
-                model_reply = ask_model(text)
-                model_used = "Mistral (fallback)"
-            steps = []
-            for line in model_reply.splitlines():
-                if ":" in line:
-                    label, expr = line.split(":", 1)
-                    expr = expr.strip()
-                    if not re.match(r"^[\d\s\+\-\*/\.\(\)x^]+$", expr):
-                        continue
-                    calc = solve_equation(expr)
-                    steps.append(f"{label.strip()}: {expr} = {calc.replace('Ответ: ', '')}")
-            result = "\n".join(steps) if steps else f"Ответ от модели:\n{model_reply}"
-            log_task(username, text, model_used, result)
-        else:
-            log_task(username, text, "SymPy (авто)", result)
+        await update.message.reply_text(result, reply_markup=get_main_keyboard())
+        return OPERATION_CHOICE
 
-    await update.message.reply_text(result, reply_markup=get_main_keyboard())
+    # Попытка решения уравнения
+    result = solve_equation(text)
+
+    if "Ошибка:" in result or result == "Решений нет.":
+        model_used = "GPT"
+        model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
+        if model_reply.strip() == "[GPT: превышен лимит]" or model_used == "None":
+            model_reply = ask_model(text)
+            model_used = "Mistral (fallback)"
+        steps = []
+        for line in model_reply.splitlines():
+            if ":" in line:
+                label, expr = line.split(":", 1)
+                expr = expr.strip()
+                if not re.match(r"^[\d\s\+\-\*/\.\(\)x^]+$", expr):
+                    continue
+                calc = solve_equation(expr)
+                steps.append(f"{label.strip()}: {expr} = {calc.replace('Ответ: ', '')}")
+        result = "\n".join(steps) if steps else f"Ответ от модели:\n{model_reply}"
+        log_task(username, text, model_used, result)
+        await update.message.reply_text(result, reply_markup=get_main_keyboard())
+    else:
+        log_task(username, text, "SymPy (авто)", result)
+        latex_code = get_latex_solution(text)
+        if latex_code:
+            img = render_latex_image(latex_code)
+            await update.message.reply_photo(photo=img, caption="Решение в виде формулы:")
+        await update.message.reply_text(result, reply_markup=get_main_keyboard())
+
     return OPERATION_CHOICE
 
 
