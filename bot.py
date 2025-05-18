@@ -13,14 +13,15 @@ from math_solver import solve_equation, compute_operation, get_latex_solution
 from latex_renderer import render_latex_image
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-
+from telegram import CallbackQuery
+from telegram.ext import CallbackQueryHandler
 load_dotenv()
 
 # Настройки вебхука
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"https://{WEBHOOK_HOST}{WEBHOOK_PATH}"
-
+AWAIT_LATEX_CONFIRM = 3
 OPERATION_CHOICE, WAIT_FOR_INPUT = range(2)
 user_operation = {}
 USE_GPT = os.getenv("OPENAI_API_KEY") is not None
@@ -94,6 +95,8 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Пожалуйста, выберите действие с клавиатуры.")
         return OPERATION_CHOICE
 
+AWAIT_LATEX_CONFIRM = 3  # добавь наверх рядом с WAIT_FOR_INPUT
+
 async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     uid = update.effective_user.id
@@ -111,6 +114,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
         return OPERATION_CHOICE
 
+    # Решение уравнения
     result = solve_equation(text)
     result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
 
@@ -120,34 +124,36 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = f"Ответ от модели:\n{model_reply}"
         log_task(username, text, model_used, result)
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
-    else:
-        log_task(username, text, "SymPy (авто)", result)
+        return OPERATION_CHOICE
 
-        latex_code = get_latex_solution(text)
-        if latex_code:
-            img = render_latex_image(latex_code)
-            try:
-                await update.message.reply_photo(photo=img, caption="Решение в LaTeX-формате:")
-            except Exception as e:
-                await update.message.reply_text(f"[Ошибка при отправке изображения]: {e}")
+    log_task(username, text, "SymPy (авто)", result)
+    await update.message.reply_text(result, reply_markup=get_yes_no_keyboard())
+    await update.message.reply_text("Показать решение в LaTeX?")
 
-            # Кнопки Да / Нет
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("Да", callback_data="yes"),
-                 InlineKeyboardButton("Нет", callback_data="no")]
-            ])
-            await update.message.reply_text("Понравилось оформление LaTeX?", reply_markup=keyboard)
-
-        await update.message.reply_text(result, reply_markup=get_main_keyboard())
-
-    return OPERATION_CHOICE
-
-
+    context.user_data["latex_expr"] = text
+    return AWAIT_LATEX_CONFIRM
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Диалог завершён.")
     return ConversationHandler.END
+async def handle_latex_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_choice = query.data
+    expr = context.user_data.get("latex_expr")
 
+    if user_choice == "yes" and expr:
+        latex_code = get_latex_solution(expr)
+        if latex_code:
+            img = render_latex_image(latex_code)
+            try:
+                await query.message.reply_photo(photo=img, caption="LaTeX-решение:")
+            except Exception as e:
+                await query.message.reply_text(f"Ошибка при отправке изображения: {e}")
+    else:
+        await query.message.reply_text("Хорошо, продолжаем без LaTeX.")
+
+    return OPERATION_CHOICE
 # === Запуск ===
 if __name__ == "__main__":
     from telegram.ext import ApplicationBuilder
@@ -155,17 +161,18 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(os.getenv("TOKEN_BOT")).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start),CommandHandler("menu", show_menu)],
+        entry_points=[CommandHandler("start", start), CommandHandler("menu", show_menu)],
         states={
             OPERATION_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_operation)],
             WAIT_FOR_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expression)],
+            AWAIT_LATEX_CONFIRM: [CallbackQueryHandler(handle_latex_confirm)],
         },
         fallbacks=[CommandHandler("cancel", cancel), MessageHandler(filters.TEXT & ~filters.COMMAND, handle_unknown)],
     )
 
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("model", model_command))
-
+    app.add_handler(CallbackQueryHandler(handle_latex_confirm))
     # Запуск синхронно — сам делает initialize/start/idle/stop
     app.run_webhook(
         listen="0.0.0.0",
