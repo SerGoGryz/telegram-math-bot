@@ -101,16 +101,31 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         op = user_operation.pop(uid)
         result = compute_operation(op, text)
         result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
-        log_task(username, f"Операция {op} с {text}", "SymPy (ручная)", result)
-        await update.message.reply_text(result, reply_markup=get_main_keyboard())
-        return OPERATION_CHOICE
+        if ("Ошибка:" in result or 
+            result == "Решений нет." or
+            "invalid syntax" in result or 
+            "could not parse" in result):
+            model_used = "GPT"
+            model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
+            if "Ошибка" in model_reply or "invalid syntax" in model_reply or "could not parse" in model_reply:
+                model_reply = "Не удалось решить задачу. Попробуйте переформулировать или ввести по-другому."
+            result = f"Ответ от модели:\n{model_reply}"
+            log_task(username, text, model_used, result)
+            await update.message.reply_text(result, reply_markup=get_main_keyboard())
+            return OPERATION_CHOICE
 
     result = solve_equation(text)
     result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
 
-    if "Ошибка:" in result or result == "Решений нет.":
+    if ("Ошибка:" in result or 
+        result == "Решений нет." or
+        "invalid syntax" in result or 
+        "could not parse" in result):
+    
         model_used = "GPT"
         model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
+        if "Ошибка" in model_reply or "invalid syntax" in model_reply or "could not parse" in model_reply:
+            model_reply = "Не удалось решить задачу. Попробуйте переформулировать или ввести по-другому."
         result = f"Ответ от модели:\n{model_reply}"
         log_task(username, text, model_used, result)
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
