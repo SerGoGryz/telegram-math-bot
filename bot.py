@@ -31,9 +31,10 @@ def ask_model(prompt: str) -> str:
     return "Локальная модель отключена на хостинге."
 
 def get_yes_no_keyboard():
-    return ReplyKeyboardMarkup([
-        [KeyboardButton("Да"), KeyboardButton("Нет")]
-    ], resize_keyboard=True, one_time_keyboard=True)
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("Да", callback_data="yes"),
+         InlineKeyboardButton("Нет", callback_data="no")]
+    ])
 
 def log_task(user, query, source, result):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -94,8 +95,6 @@ async def choose_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Пожалуйста, выберите действие с клавиатуры.")
         return OPERATION_CHOICE
-
-AWAIT_LATEX_CONFIRM = 3  # добавь наверх рядом с WAIT_FOR_INPUT
 
 async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -172,7 +171,6 @@ if __name__ == "__main__":
 
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("model", model_command))
-    app.add_handler(CallbackQueryHandler(handle_latex_confirm))
     # Запуск синхронно — сам делает initialize/start/idle/stop
     app.run_webhook(
         listen="0.0.0.0",
