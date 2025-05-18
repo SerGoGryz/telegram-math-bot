@@ -9,7 +9,7 @@ from math_solver import solve_equation, compute_operation
 from gpt_solver import ask_gpt
 from datetime import datetime
 import re
-from math_solver import solve_equation, compute_operation, get_latex_solution
+from math_solver import solve_equation, compute_operation
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
