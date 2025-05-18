@@ -63,13 +63,20 @@ def compute_operation(operation: str, expression: str):
         elif operation == "log":
             parts = expression.strip().split()
             if len(parts) == 2:
-                base, arg = map(parse_expr, parts)
-                return f"Логарифм по основанию {base}: {str(log(arg, base)).replace('**', '^')}"
+                try:
+                    base, arg = map(parse_expr, parts)
+                    return f"Логарифм по основанию {base}: {str(log(arg, base)).replace('**', '^')}"
+                except Exception:
+                    return "Ошибка: для логарифма укажите два числа или выражения через пробел, например: 2 8"
             elif len(parts) == 1:
-                arg = parse_expr(parts[0])
-                return f"Натуральный логарифм: {str(log(arg)).replace('**', '^')}"
+                try:
+                    arg = parse_expr(parts[0])
+                    return f"Натуральный логарифм: {str(log(arg)).replace('**', '^')}"
+                except Exception:
+                    return "Ошибка: для натурального логарифма просто введите число, например: 10"
             else:
                 return "Ошибка: введите через пробел основание и аргумент, например: 2 8"
+
 
         elif operation == "expand":
             return f"Раскрыто: {str(expand(parsed)).replace('**', '^')}"
