@@ -126,8 +126,8 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return OPERATION_CHOICE
 
     log_task(username, text, "SymPy (авто)", result)
-    await update.message.reply_text(result, reply_markup=get_yes_no_keyboard())
-    await update.message.reply_text("Показать решение в LaTeX?")
+    await update.message.reply_text(result)
+    await update.message.reply_text("Показать решение в LaTeX?", reply_markup=get_yes_no_keyboard())
 
     context.user_data["latex_expr"] = text
     return AWAIT_LATEX_CONFIRM
