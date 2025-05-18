@@ -15,7 +15,7 @@ def ask_gpt(prompt: str) -> Tuple[str, str]:
                 {"role": "user", "content": prompt}
             ],
             temperature=0.4,
-            max_tokens=500
+            max_tokens=5000
         )
         return response.choices[0].message.content.strip(), PRIMARY
     except Exception:
@@ -27,7 +27,7 @@ def ask_gpt(prompt: str) -> Tuple[str, str]:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.4,
-                max_tokens=500
+                max_tokens=5000
             )
             return response.choices[0].message.content.strip(), SECONDARY
         except RateLimitError:
