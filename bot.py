@@ -14,6 +14,7 @@ from latex_renderer import render_latex_image
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 load_dotenv()
+from telegram.helpers import escape_markdown
 
 # Настройки вебхука
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
@@ -121,15 +122,14 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Вывод LaTeX как форматированный текст (Markdown)
     latex_code = get_latex_solution(text)
     if latex_code:
+        latex_escaped = escape_markdown(latex_code, version=2)
         await update.message.reply_text(
-            f"*LaTeX-решение:*\n`{latex_code}`",
-            parse_mode="Markdown",
+            f"*LaTeX-решение:*\n```\n{latex_escaped}\n```",
+            parse_mode="MarkdownV2",
             reply_markup=get_main_keyboard()
         )
     else:
         await update.message.reply_text("Выберите следующее действие:", reply_markup=get_main_keyboard())
-
-    return OPERATION_CHOICE
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
