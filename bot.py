@@ -98,7 +98,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await choose_operation(update, context)
 
     if uid in user_operation:
-        op = user_operation.pop(uid)
+        p = user_operation.pop(uid)
         result = compute_operation(op, text)
         result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
         if ("Ошибка:" in result or 
@@ -113,6 +113,11 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
             log_task(username, text, model_used, result)
             await update.message.reply_text(result, reply_markup=get_main_keyboard())
             return OPERATION_CHOICE
+
+        log_task(username, f"Операция {op} с {text}", "SymPy (ручная)", result)
+        await update.message.reply_text(result, reply_markup=get_main_keyboard())
+        return OPERATION_CHOICE
+
 
     result = solve_equation(text)
     result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
