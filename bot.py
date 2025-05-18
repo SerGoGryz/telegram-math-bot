@@ -98,7 +98,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await choose_operation(update, context)
 
     if uid in user_operation:
-        p = user_operation.pop(uid)
+        op = user_operation.pop(uid)
         result = compute_operation(op, text)
         result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
         if ("Ошибка:" in result or 
