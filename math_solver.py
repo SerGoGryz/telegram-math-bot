@@ -25,34 +25,6 @@ def format_solution(solutions):
         return "Комплексные корни:\n" + "\n".join(formatted)
     return "Решение:\n" + "\n".join(formatted)
 
-
-def get_latex_solution(expr: str) -> str:
-    x = symbols('x')
-    expr = expr.replace("^", "**")
-    expr = insert_multiplication_signs(expr)
-    try:
-        if "=" in expr:
-            left, right = expr.split("=")
-            left_expr = parse_expr(left.strip())
-            right_expr = parse_expr(right.strip())
-            equation = Eq(left_expr, right_expr)
-        elif "x" in expr:
-            parsed = parse_expr(expr)
-            equation = Eq(parsed, 0)
-        else:
-            return None
-        solutions = solve(equation, x)
-        latex_parts = []
-        for i, sol in enumerate(solutions):
-            simplified = simplify(sol)
-            latex_expr = latex(simplified).replace("i", r"\mathrm{i}")
-            latex_parts.append(f"x_{{{i+1}}} = {latex_expr}")
-        return ";\n".join(latex_parts)
-    except:
-        return None
-
-
-
 def solve_equation(expr: str):
     x = symbols('x')
     expr = expr.replace("^", "**")
