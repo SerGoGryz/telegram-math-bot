@@ -55,12 +55,7 @@ def compute_operation(operation: str, expression: str):
     expression = expression.replace("^", "**")
     expression = insert_multiplication_signs(expression)
     try:
-        parsed = parse_expr(expression)
-        if operation == "integrate":
-            return f"Интеграл: {str(integrate(parsed, x)).replace('**', '^')}"
-        elif operation == "diff":
-            return f"Производная: {str(diff(parsed, x)).replace('**', '^')}"
-        elif operation == "log":
+        if operation == "log":
             parts = expression.strip().split()
             if len(parts) == 2:
                 try:
@@ -77,7 +72,11 @@ def compute_operation(operation: str, expression: str):
             else:
                 return "Ошибка: введите через пробел основание и аргумент, например: 2 8"
 
-
+        parsed = parse_expr(expression)
+        if operation == "integrate":
+            return f"Интеграл: {str(integrate(parsed, x)).replace('**', '^')}"
+        elif operation == "diff":
+            return f"Производная: {str(diff(parsed, x)).replace('**', '^')}"
         elif operation == "expand":
             return f"Раскрыто: {str(expand(parsed)).replace('**', '^')}"
         elif operation == "simplify":
@@ -88,3 +87,4 @@ def compute_operation(operation: str, expression: str):
             return "Неизвестная операция."
     except Exception as e:
         return f"Ошибка при вычислении: {e}"
+
