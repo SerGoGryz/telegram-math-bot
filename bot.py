@@ -106,6 +106,10 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
             result == "Решений нет." or
             "invalid syntax" in result or 
             "could not parse" in result):
+            if op == "log":
+                await update.message.reply_text(result, reply_markup=get_main_keyboard())
+                return OPERATION_CHOICE
+
             model_used = "GPT"
             model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
             if "Ошибка" in model_reply or "invalid syntax" in model_reply or "could not parse" in model_reply:
