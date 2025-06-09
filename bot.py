@@ -27,7 +27,17 @@ LOG_FILE = "log.txt"
 
 def ask_model(prompt: str) -> str:
     return "Локальная модель отключена на хостинге."
+PROMPTS = {
+    "diff":       "Найди производную выражения: ",
+    "integrate":  "Вычисли неопределённый интеграл выражения: ",
+    "log":        "Вычисли логарифм (если надо, укажи основание) для выражения: ",
+    "simplify":   "Упрости выражение: ",
+    "expand":     "Раскрой скобки в выражении: ",
+    "solve":      "Реши уравнение: ",
+    "free":       "Реши или растолкуй: "
+}
 
+ALLOWED_CHARS = r"^[0-9a-zA-ZxXeEππ\+\-\*/\^\(\)=\s\.,_:]*$"   # всё, что SymPy обычно «ест»
 
 def log_task(user, query, source, result):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -97,29 +107,26 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if text in ["Назад", "Очистить", "start", "/start"]:
         return await choose_operation(update, context)
-
     if uid in user_operation:
         op = user_operation.pop(uid)
-        result = compute_operation(op, text)
-        result = result.replace("sqrt", "√").replace("⋅", "*").replace("ⅈ", "i")
-        if ("Ошибка:" in result or 
-            result == "Решений нет." or
-            "invalid syntax" in result or 
-            "could not parse" in result):
-            if op == "log":
-                await update.message.reply_text(result, reply_markup=get_main_keyboard())
-                return OPERATION_CHOICE
+        clean_text = text.replace("√", "sqrt")          # 1) Меняем знак корня
+        result = compute_operation(op, clean_text)      # 2) Пробуем SymPy
 
-            model_used = "GPT"
-            model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
-            if "Ошибка" in model_reply or "invalid syntax" in model_reply or "could not parse" in model_reply:
-                model_reply = "Не удалось решить задачу. Попробуйте переформулировать или ввести по-другому."
-            result = f"Ответ от модели:\n{model_reply}"
-            log_task(username, text, model_used, result)
-            await update.message.reply_text(result, reply_markup=get_main_keyboard())
+        bad = ("Ошибка:" in result or
+               result == "Решений нет." or
+               re.search(r"invalid|could not parse", result, re.I) or
+               not re.match(ALLOWED_CHARS, clean_text))           # 3) «Подозрительный» ответ
+
+        if bad:
+            prompt = PROMPTS.get(op, PROMPTS["free"]) + text
+            model_reply, model_used = ask_gpt(prompt) if USE_GPT else (ask_model(prompt), "Mistral")
+            reply = f"Ответ от модели ({model_used}):\n{model_reply}"
+            log_task(username, text, model_used, reply)
+            await update.message.reply_text(reply, reply_markup=get_main_keyboard())
             return OPERATION_CHOICE
 
-        log_task(username, f"Операция {op} с {text}", "SymPy (ручная)", result)
+        # если всё хорошо – обычный путь
+        log_task(username, f"Операция {op} с {text}", "SymPy", result)
         await update.message.reply_text(result, reply_markup=get_main_keyboard())
         return OPERATION_CHOICE
 
@@ -134,7 +141,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
         model_used = "GPT"
         model_reply, model_used = ask_gpt(text) if USE_GPT else (ask_model(text), "Mistral")
-        if "Ошибка" in model_reply or "invalid syntax" in model_reply or "could not parse" in model_reply:
+        if "Ошибка" in model_reply or "invalid" in model_reply or "invalid syntax" in model_reply or "could not parse" in model_reply:
             model_reply = "Не удалось решить задачу. Попробуйте переформулировать или ввести по-другому."
         result = f"Ответ от модели:\n{model_reply}"
         log_task(username, text, model_used, result)

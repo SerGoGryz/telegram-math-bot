@@ -52,6 +52,7 @@ def solve_equation(expr: str):
 
 def compute_operation(operation: str, expression: str):
     x = symbols('x')
+    expression = expression.replace("√", "sqrt")
     expression = expression.replace("^", "**")
     expression = insert_multiplication_signs(expression)
     try:
