@@ -120,7 +120,7 @@ async def handle_expression(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if bad:
             prompt = PROMPTS.get(op, PROMPTS["free"]) + text
             model_reply, model_used = ask_gpt(prompt) if USE_GPT else (ask_model(prompt), "Mistral")
-            reply = f"Ответ от модели ({model_used}):\n{model_reply}"
+            reply = f"Ответ:\n{model_reply}"
             log_task(username, text, model_used, reply)
             await update.message.reply_text(reply, reply_markup=get_main_keyboard())
             return OPERATION_CHOICE
